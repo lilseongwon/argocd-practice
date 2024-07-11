@@ -23,6 +23,16 @@ metadata:
     tier: backend
 spec:
   replicas: 2    # Number of replicas of back-end application to be deployed
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/role: 'test'
+        vault.hashicorp.com/agent-inject-template-config: |
+          {{- with secret "secret/data/test" -}}
+          export DB_USERNAME="{{ .Data.data.username }}"
+          export DB_PASSWORD="{{ .Data.data.password }}"
+          {{- end -}}
   selector:
     matchLabels: # backend application pod labels should match these
       app: to-do-app
@@ -47,15 +57,5 @@ spec:
               configMapKeyRef:
                 name: db-conf 
                 key: name
-          - name: DB_USERNAME  # Setting Database username from Secret
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials # Secret Name
-                key: username
-          - name: DB_PASSWORD # Setting Database password from Secret
-            valueFrom:
-              secretKeyRef:
-                name: db-credentials
-                key: password     
         ports:
         - containerPort: 8080
