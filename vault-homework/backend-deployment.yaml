@@ -4,7 +4,7 @@ kind: Service
 metadata:
   name: to-do-app-backend  
 spec:
-  selector:  # backend application pod lables should match these
+  selector:  # backend application pod labels should match these
     app: to-do-app
     tier: backend
   ports:
@@ -23,54 +23,48 @@ metadata:
     tier: backend
 spec:
   replicas: 2    # Number of replicas of back-end application to be deployed
-  template:
-    metadata:
-      annotations:
-        vault.hashicorp.com/agent-inject: 'true'
-        vault.hashicorp.com/role: internal-app
-        vault.hashicorp.com/agent-inject-template-config: |
-          {{- with secret "secret/data/test" -}}
-          export DB_USERNAME="{{ .Data.data.username }}"
-          export DB_PASSWORD="{{ .Data.data.password }}"
-          {{- end -}}
   selector:
     matchLabels: # backend application pod labels should match these
       app: to-do-app
       tier: backend
   template:
     metadata:
-      labels: # Must macth 'Service' and 'Deployment' labels
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/agent-inject-secret-test: secret/data/test
+        vault.hashicorp.com/role: internal-app
+        vault.hashicorp.com/agent-inject-template-DB_HOST: |
+          {{- with secret "secret/data/test" -}}
+          export DB_HOST={{ .Data.data.host }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-template-DB_NAME: |
+          {{- with secret "secret/data/test" -}}
+          export DB_NAME={{ .Data.data.name }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-template-DB_USERNAME: |
+          {{- with secret "secret/data/test" -}}
+          export DB_USERNAME={{ .Data.data.username }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-template-DB_PASSWORD: |
+          {{- with secret "secret/data/test" -}}
+          export DB_PASSWORD={{ .Data.data.password }}
+          {{- end }}
+      labels: # Must match 'Service' and 'Deployment' labels
         app: to-do-app
         tier: backend  
-    spec:
-      serviceAccountName: vault-secret-read          
+    spec:                 
+      serviceAccountName: vault-secret-read
       containers: 
       - name: to-do-app-backend 
         image: kubernetesdemo/to-do-app-backend   # docker image of backend application
-        command:
-          - "sh"
-          - "-c"
-          - "cat /vault/secrets/test && sleep 10000"
-        imagePullPolicy: Always
-        name: vault-injector-test
-        resources: {}
-        terminationMessagePath: /dev/termination-log
-        terminationMessagePolicy: File
-      dnsPolicy: ClusterFirst
-      restartPolicy: Always
-      schedulerName: default-scheduler
-      securityContext: {}
-      terminationGracePeriodSeconds: 30
-        env:   # Setting Enviornmental Variables
-          - name: DB_HOST   # Setting Database host address from configMap
-            valueFrom: 
-              configMapKeyRef:
-                name: db-conf  # name of configMap
-                key: host
-          - name: DB_NAME  # Setting Database name from configMap
-            valueFrom:
-              configMapKeyRef:
-                name: db-conf 
-                key: name
+        env:
+          - name: DB_HOST
+            value: {{ .Data.data.host }}
+          - name: DB_NAME
+            value: {{ .Data.data.name }}
+          - name: DB_USERNAME
+            value: {{ .Data.data.username }}
+          - name: DB_PASSWORD
+            value: {{ .Data.data.password }}
         ports:
         - containerPort: 8080
