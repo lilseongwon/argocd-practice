@@ -31,22 +31,22 @@ spec:
     metadata:
       annotations:
         vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/agent-inject-secret-test: secret/data/test
+        vault.hashicorp.com/agent-inject-secret-db: secret/data/db
         vault.hashicorp.com/role: internal-app
         vault.hashicorp.com/agent-inject-template-DB_HOST: |
-          {{- with secret "secret/data/test" -}}
+          {{- with secret "secret/data/db" -}}
           export DB_HOST={{ .Data.data.host }}
           {{- end }}
         vault.hashicorp.com/agent-inject-template-DB_NAME: |
-          {{- with secret "secret/data/test" -}}
+          {{- with secret "secret/data/db" -}}
           export DB_NAME={{ .Data.data.name }}
           {{- end }}
         vault.hashicorp.com/agent-inject-template-DB_USERNAME: |
-          {{- with secret "secret/data/test" -}}
+          {{- with secret "secret/data/db" -}}
           export DB_USERNAME={{ .Data.data.username }}
           {{- end }}
         vault.hashicorp.com/agent-inject-template-DB_PASSWORD: |
-          {{- with secret "secret/data/test" -}}
+          {{- with secret "secret/data/db" -}}
           export DB_PASSWORD={{ .Data.data.password }}
           {{- end }}
       labels: # Must match 'Service' and 'Deployment' labels
@@ -59,12 +59,12 @@ spec:
         image: kubernetesdemo/to-do-app-backend   # docker image of backend application
         env:
           - name: DB_HOST
-            value: {{ .Data.data.host }}
+            value: "vault:secrets/data/db#host"
           - name: DB_NAME
-            value: {{ .Data.data.name }}
+            value: "vault:secrets/data/db#name"
           - name: DB_USERNAME
-            value: {{ .Data.data.username }}
+            value: "vault:secrets/data/db#username"
           - name: DB_PASSWORD
-            value: {{ .Data.data.password }}
+            value: "vault:secrets/data/db#password"
         ports:
         - containerPort: 8080
