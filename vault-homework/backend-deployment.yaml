@@ -42,10 +42,25 @@ spec:
       labels: # Must macth 'Service' and 'Deployment' labels
         app: to-do-app
         tier: backend  
-    spec:                 
+    spec:
+      serviceAccountName: vault-secret-read          
       containers: 
       - name: to-do-app-backend 
         image: kubernetesdemo/to-do-app-backend   # docker image of backend application
+        command:
+          - "sh"
+          - "-c"
+          - "cat /vault/secrets/test && sleep 10000"
+        imagePullPolicy: Always
+        name: vault-injector-test
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
         env:   # Setting Enviornmental Variables
           - name: DB_HOST   # Setting Database host address from configMap
             valueFrom: 
