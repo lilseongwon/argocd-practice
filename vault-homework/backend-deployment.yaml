@@ -30,41 +30,29 @@ spec:
   template:
     metadata:
       annotations:
+        vault.hashicorp.com/agent-init-first: "true"
         vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/agent-inject-secret-test: secret/data/test
-        vault.hashicorp.com/role: internal-app
-        vault.hashicorp.com/agent-inject-template-DB_HOST: |
-          {{- with secret "secret/data/test" -}}
-          export DB_HOST={{ .Data.data.host }}
+        vault.hashicorp.com/role: vault-spring
+        vault.hashicorp.com/agent-inject-secret-config.json: test
+        vault.hashicorp.com/agent-inject-template-config.json: |
+          {{- with secret "test/data/test" -}}
+          {"DB_NAME":"{{ .Data.data.name }}","DB_PASSWORD":"{{ .Data.data.password }}", "DB_USERNAME":"{{ .Data.data.username }}", "DB_HOST":"{{ .Data.data.host }}"}
           {{- end }}
-        vault.hashicorp.com/agent-inject-template-DB_NAME: |
-          {{- with secret "secret/data/test" -}}
-          export DB_NAME={{ .Data.data.name }}
-          {{- end }}
-        vault.hashicorp.com/agent-inject-template-DB_USERNAME: |
-          {{- with secret "secret/data/test" -}}
-          export DB_USERNAME={{ .Data.data.username }}
-          {{- end }}
-        vault.hashicorp.com/agent-inject-template-DB_PASSWORD: |
-          {{- with secret "secret/data/test" -}}
-          export DB_PASSWORD={{ .Data.data.password }}
-          {{- end }}
+        vault.hashicorp.com/secret-volume-path-config.json: /test
       labels: # Must match 'Service' and 'Deployment' labels
         app: to-do-app
-        tier: backend  
+        tier: backend
     spec:                 
-      serviceAccountName: vault-secret-read
       containers: 
       - name: to-do-app-backend 
         image: kubernetesdemo/to-do-app-backend   # docker image of backend application
-        env:
-          - name: DB_HOST
-            value: "vault:secrets/data/test#host"
-          - name: DB_NAME
-            value: "vault:secrets/data/test#name"
-          - name: DB_USERNAME
-            value: "vault:secrets/data/test#username"
-          - name: DB_PASSWORD
-            value: "vault:secrets/data/test#password"
         ports:
         - containerPort: 8080
+        
+  
+      labels:
+        app: vault-test
+    spec:
+      containers:
+      - image: nginx
+        name: vault-test
